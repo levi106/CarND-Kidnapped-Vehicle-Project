@@ -97,7 +97,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	double gauss_norm = 1 / (2 * M_PI * sig_x * sig_y);
 	double var_x = 2 * sig_x * sig_x;
 	double var_y = 2 * sig_y * sig_y;
-	double total = 0.0;
+	weights.clear();
 	for (auto& part : particles) {
 		double weight = 1.0;
 		for (const auto& observation : observations) {
@@ -113,7 +113,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 				dx *= dx;
 				double dy = landmark.y_f - obs.y;
 				dy *= dy;
-				if (dx + dy < min_dx + min_dy) {
+				if (dx + dy < min_dx + min_dy && sqrt(dx + dy) <= sensor_range) {
 					min_dx = dx;
 					min_dy = dy;
 				}
@@ -122,16 +122,9 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			weight *= gauss_norm * exp(-exponent);
 		}
 		part.weight = weight;
-		total += weight;
+		weights.push_back(weight);
 	}
-	max_weight = 0.0;
-	// normalize weights
-	for (auto& part : particles) {
-		part.weight /= total;
-		if (part.weight > max_weight) {
-			max_weight = part.weight;
-		}
-	}
+	max_weight = *max_element(begin(weights), end(weights));
 }
 
 void ParticleFilter::resample() {
